@@ -33,3 +33,31 @@ class Board:
                         self.board[row].append(0)
                 else:
                     self.board[row].append(0)
+    def print_board(self):
+        """Print a text representation of the board."""
+        print("\n  " + " ".join(str(i) for i in range(8)))
+        for i, row in enumerate(self.board):
+            print(f"{i} " + " ".join(str(p) if p != 0 else "." for p in row))
+
+    def move_piece(self, piece, row, col):
+        """Move a piece to a new position and update internal state."""
+        if not isinstance(piece, Piece):
+            raise ValueError(f"Expected a Piece object, got {type(piece)}")
+
+        self.board[piece.row][piece.col] = 0
+        piece.row, piece.col = row, col
+        self.board[row][col] = piece
+
+    def remove_piece(self, row, col):
+        """Remove a piece from the board (used for captures)."""
+        self.board[row][col] = 0
+
+    def get_all_pieces(self, color):
+        """Return a list of all pieces of the given color."""
+        pieces = []
+        for row in range(8):
+            for col in range(8):
+                piece = self.board[row][col]
+                if piece != 0 and piece.color == color:
+                    pieces.append(piece)
+        return pieces
