@@ -139,3 +139,41 @@ class Board:
                 visited_with_jump = visited.union({(jump_row, jump_col)})
                 self._check_jumps(piece, jump_row, jump_col,
                                   new_captured, moves, visited_with_jump)
+      def make_move(self, move):
+        """Simulate a move on the board.
+        Args:
+            move (tuple): A tuple containing the piece, destination, and any captured pieces.
+        """
+        piece, (row, col), captured = move
+
+        if not isinstance(piece, Piece):
+            raise ValueError(
+                f"Expected a Piece, got {type(piece)} with value {piece}")
+
+        # Move the piece to the new position
+        self.board[piece.row][piece.col] = 0
+        piece.row, piece.col = row, col
+        self.board[row][col] = piece
+
+        # Remove any captured pieces
+        for r, c in captured:
+            self.board[r][c] = 0
+
+        # Promote to king if reaching end row
+        if (piece.color == "r" and row == 7) or (piece.color == "b" and row == 0):
+            piece.make_king()
+
+    def is_terminal(self):
+        """Check if this is a terminal state (game over)."""
+        red_count, black_count = self.count_pieces()
+        return red_count == 0 or black_count == 0
+
+    def __getitem__(self, index):
+        # Allow subscripting to access the internal board
+        return self.board[index]
+
+    def __str__(self):
+        """String representation of the board for debugging."""
+        board_str = "\n  " + " ".join(str(i) for i in range(8)) + "\n"
+        for i, row in enumerate(self.board):
+            board_str += f"{i} " + \
