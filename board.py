@@ -177,3 +177,6 @@ class Board:
         board_str = "\n  " + " ".join(str(i) for i in range(8)) + "\n"
         for i, row in enumerate(self.board):
             board_str += f"{i} " + \
+                            " ".join(str(p) if p != 0 else "." for p in row) + "\n"
+        return board_str
+
