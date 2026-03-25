@@ -101,3 +101,88 @@ class Game:
 
                     # Restore the jumped piece
                     self.board.board[mid_row][mid_col] = temp
+
+    def has_valid_moves(self, color):
+        """Check if a player has any valid moves."""
+        # Save original turn
+        original_turn = self.turn
+        self.turn = color
+
+        # Check if any piece has valid moves
+        pieces = self.board.get_all_pieces(color)
+        has_moves = any(self.get_valid_moves(piece) for piece in pieces)
+
+        # Restore original turn
+        self.turn = original_turn
+        return has_moves
+
+    def move(self, piece, row, col):
+        """Move a piece and handle captures and promotions."""
+        if not isinstance(piece, Piece):
+            raise ValueError(f"Expected a Piece, got {type(piece)}")
+
+        # Get the valid moves to check for captures
+        valid_moves = self.get_valid_moves(piece)
+
+        # Check if this is a valid move
+        if (row, col) not in valid_moves:
+            raise ValueError(
+                f"Invalid move to ({row}, {col}) for piece at ({piece.row}, {piece.col})")
+
+        # Move the piece
+        self.board.board[piece.row][piece.col] = 0
+        piece.row, piece.col = row, col
+        self.board.board[row][col] = piece
+
+        # Handle captures
+        jumped = valid_moves.get((row, col), [])
+        for j_row, j_col in jumped:
+            self.remove_piece(j_row, j_col)
+
+        # Promote to king if reaching end row
+                if (piece.color == "r" and row == 7) or (piece.color == "b" and row == 0):
+            piece.make_king()
+
+        return jumped  # Return list of captured pieces for UI feedback
+
+    def remove_piece(self, row, col):
+        """Remove a piece from the board."""
+        self.board.board[row][col] = 0
+
+    def is_game_over(self):
+        """Check if the game is over (no pieces or no moves for either side)."""
+        red_count, black_count = self.board.count_pieces()
+
+        # If one side has no pieces, we're done
+        if red_count == 0 or black_count == 0:
+            return True
+
+        # Check moves for both players
+        red_can_move = self.has_valid_moves("r")
+        black_can_move = self.has_valid_moves("b")
+
+        # Game is over if either side has no moves
+        return not (red_can_move and black_can_move)
+
+    def get_winner(self):
+        """Determine the winner of the game."""
+        red_count, black_count = self.board.count_pieces()
+
+        # Check piece count
+        if red_count == 0:
+            return "Black"
+        if black_count == 0:
+            return "Red"
+
+        # Check mobility
+        red_can_move = self.has_valid_moves("r")
+        black_can_move = self.has_valid_moves("b")
+
+        if not red_can_move:
+                        return "Black"
+        if not black_can_move:
+            return "Red"
+        
+        return None
+
+
