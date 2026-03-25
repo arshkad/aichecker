@@ -84,3 +84,129 @@ def test_multiple_jump_paths():
     game.move(red_piece, 6, 3)
     assert game.board.board[5][2] == 0   # second capture
     assert game.board.board[6][3] == red_piece
+
+def test_illegal_move_rejected():
+    game = Game()
+
+    # Try to move a red piece illegally (diagonal two-square move without capture)
+    piece = game.board.board[2][1]
+    invalid_target = (4, 3)  # Not a valid jump since no enemy in between
+
+    valid_moves = game.get_valid_moves(piece)
+    assert invalid_target not in valid_moves, "Illegal move should not be allowed"
+
+def test_backward_movement_non_king():
+    game = Game()
+
+    # Place a red piece
+    piece = game.board.board[2][1]
+
+    # Attempt to move backward
+    invalid_target = (1, 0)  # Backward move
+    valid_moves = game.get_valid_moves(piece)
+    assert invalid_target not in valid_moves, "Non-king pieces should not move backward"
+def test_king_movement():
+    game = Game()
+
+    # Promote a piece to king
+    piece = Piece(4, 4, "r", king=True)
+    game.board.board[4][4] = piece
+
+    # Test all diagonal directions
+    valid_moves = game.get_valid_moves(piece)
+    assert (3, 3) in valid_moves, "King should move backward-left"
+    assert (3, 5) in valid_moves, "King should move backward-right"
+    assert (5, 3) in valid_moves, "King should move forward-left"
+    assert (5, 5) in valid_moves, "King should move forward-right"
+
+def test_turn_enforcement():
+    game = Game()
+
+    # Attempt to move a black piece during red's turn
+    black_piece = game.board.board[5][0]
+    valid_moves = game.get_valid_moves(black_piece)
+    assert not valid_moves, "Black pieces should not move during red's turn"
+
+def test_edge_of_board():
+    game = Game()
+    #clear out all default pieces so we only have this one on the board
+    game.board.board = [[0 for _ in range(8)] for _ in range(8)]    
+    
+    # Place a red piece near the edge
+    piece = Piece(0, 1, "r")
+    game.board.board[0][1] = piece
+
+    # Attempt to move off the board
+    valid_moves = game.get_valid_moves(piece)
+    assert (1, 0) in valid_moves, "Move within bounds should be valid"
+    assert (-1, -1) not in valid_moves, "Move off the board should not be valid"
+
+def test_game_over_no_pieces():
+    game = Game()
+
+    # Remove all black pieces
+    game.board.board = [[0 for _ in range(8)] for _ in range(8)]
+    game.board.board[0][1] = Piece(0, 1, "r")  # Only one red piece remains
+
+    assert game.is_game_over(), "Game should end when one player has no pieces"
+    assert game.get_winner() == "Red", "Red should win when black has no pieces"
+
+def test_game_over_no_moves():
+    game = Game()
+
+    # Set up a scenario where black has no valid moves
+    game.board.board = [[0 for _ in range(8)] for _ in range(8)]
+    game.board.board[0][1] = Piece(0, 1, "r")
+    game.board.board[0][3] = Piece(0, 3, "r")
+    game.board.board[1][2] = Piece(1, 2, "b")  # Black piece blocked by red
+
+    assert game.is_game_over(), "Game should end when one player has no valid moves"
+    assert game.get_winner() == "Red", "Red should win when black has no valid moves"
+
+def test_multi_jump_mixed_directions():
+    game = Game()
+
+    # Clear the board
+    game.board.board = [[0 for _ in range(8)] for _ in range(8)]
+
+    # Place a red piece
+    red_piece = Piece(2, 3, "r")
+    game.board.board[2][3] = red_piece
+
+    # Place black pieces for mixed-direction jumps
+    game.board.board[3][2] = Piece(3, 2, "b")  # left path
+    game.board.board[5][2] = Piece(5, 2, "b")  # right path
+    # First move from (2,3) to (4,1) should be possible
+    valid_moves = game.get_valid_moves(red_piece)
+    assert (4, 1) in valid_moves, "First capture move should be available"
+
+    # Perform the first jump
+    game.move(red_piece, 4, 1)
+    game.remove_piece(3, 2)
+    assert game.board.board[3][2] == 0, "First captured piece should be removed"
+    assert game.board.board[4][1] == red_piece, "Red piece should land correctly"
+
+    # Check for the second jump in a different direction
+    valid_moves = game.get_valid_moves(red_piece)
+    assert (6, 3) in valid_moves, "Second jump in a different direction should be available"
+
+def run_all_tests():
+    test_basic_move()
+    test_king_promotion()
+    test_capture_move()
+    test_multiple_jump_paths()
+    test_illegal_move_rejected()
+    test_backward_movement_non_king()
+    test_king_movement()
+    test_turn_enforcement()
+    test_edge_of_board()
+    test_game_over_no_pieces()
+    test_game_over_no_moves()
+    test_multi_jump_mixed_directions()
+    print("All tests passed. Congratualation! :)")
+
+if __name__ == "__main__":
+    run_all_tests()
+
+
+
