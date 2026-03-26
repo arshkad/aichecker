@@ -144,4 +144,97 @@ class SimpleProblemSolvingAgentProgram:
         to get to a particular state from the initial state(root)."""
         self.state = initial_state
         self.seq = []
+    
+    def __call__(self, percept):
+        """[Figure 3.1] Formulate a goal and problem, then
+        search for a sequence of actions to solve it."""
+        self.state = self.update_state(self.state, percept)
+        if not self.seq:
+            goal = self.formulate_goal(self.state)
+            problem = self.formulate_problem(self.state, goal)
+            self.seq = self.search(problem)
+            if not self.seq:
+                return None
+        return self.seq.pop(0)
+
+    def update_state(self, state, percept):
+        raise NotImplementedError
+
+    def formulate_goal(self, state):
+        raise NotImplementedError
+
+    def formulate_problem(self, state, goal):
+        raise NotImplementedError
+    
+    def search(self, problem):
+        raise NotImplementedError
+
+
+# ______________________________________________________________________________
+# Uninformed Search algorithms
+
+
+def breadth_first_tree_search(problem):
+    """
+    [Figure 3.7]
+    Search the shallowest nodes in the search tree first.
+    Search through the successors of a problem to find a goal.
+    The argument frontier should be an empty queue.
+    Repeats infinitely in case of loops.
+    """
+
+    frontier = deque([Node(problem.initial)])  # FIFO queue
+
+    while frontier:
+        node = frontier.popleft()
+        if problem.goal_test(node.state):
+            return node
+        frontier.extend(node.expand(problem))
+    return None
+
+def depth_first_tree_search(problem):
+    """
+    [Figure 3.7]
+    Search the deepest nodes in the search tree first.
+    Search through the successors of a problem to find a goal.
+    The argument frontier should be an empty queue.
+    Repeats infinitely in case of loops.
+    """
+
+    frontier = [Node(problem.initial)]  # Stack
+
+    while frontier:
+        node = frontier.pop()
+        if problem.goal_test(node.state):
+            return node
+        frontier.extend(node.expand(problem))
+    return None
+
+
+def depth_first_graph_search(problem):
+    """
+    [Figure 3.7]
+    Search the deepest nodes in the search tree first.
+    Search through the successors of a problem to find a goal.
+    The argument frontier should be an empty queue.
+    Does not get trapped by loops.
+    If two paths reach a state, only use the first one.
+    """
+    frontier = [(Node(problem.initial))]  # Stack
+        explored = set()
+    while frontier:
+        node = frontier.pop()
+        if problem.goal_test(node.state):
+            return node
+        explored.add(node.state)
+        frontier.extend(child for child in node.expand(problem)
+                        if child.state not in explored and child not in frontier)
+    return None
+
+
+
+
+
+
+
 
