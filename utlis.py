@@ -749,7 +749,26 @@ class PriorityQueue:
             if item == key:
                 return value
         raise KeyError(str(key) + " is not in the priority queue")
+    def __delitem__(self, key):
+        """Delete the first occurrence of key."""
+        try:
+            del self.heap[[item == key for _, item in self.heap].index(True)]
+        except ValueError:
+            raise KeyError(str(key) + " is not in the priority queue")
+        heapq.heapify(self.heap)
 
+
+# ______________________________________________________________________________
+# Useful Shorthands
+
+
+class Bool(int):
+    """Just like `bool`, except values display as 'T' and 'F' instead of 'True' and 'False'."""
+    __str__ = __repr__ = lambda self: 'T' if self else 'F'
+
+
+T = Bool(True)
+F = Bool(False)
 
 
 
