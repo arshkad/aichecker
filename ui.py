@@ -56,4 +56,87 @@ class CheckersUI:
         self.create_board()
         self.update_board()
         self.update_status()
+    def create_board(self):
+        # Clear any existing buttons
+        for widget in self.board_frame.winfo_children():
+            widget.destroy()
+        
+        self.buttons = [[None for _ in range(8)] for _ in range(8)]
+        
+        for row in range(8):
+            for col in range(8):
+                # Light and dark squares
+                color = self.light_square if (row + col) % 2 == 0 else self.dark_square
+                button = tk.Button(self.board_frame, bg=color, width=4, height=2,
+                                   command=lambda r=row, c=col: self.on_square_click(r, c))
+                button.grid(row=row, column=col)
+                self.buttons[row][col] = button
+
+    def update_status(self):
+        """Update the status label to show whose turn it is"""
+        turn_text = "Red's Turn" if self.game.turn == "r" else "Black's Turn"
+        if self.game_mode == "ai":
+            turn_text += " (You)" if self.game.turn == "r" else " (AI)"
+        self.status_label.config(text=turn_text)
+
+    def update_board(self):
+        print("Updating board...")
+        for row in range(8):
+            for col in range(8):
+                piece = self.game.board.board[row][col]
+                color = self.light_square if (row + col) % 2 == 0 else self.dark_square
+                                # Check if this is the selected piece
+                if self.selected_piece and (row, col) == self.selected_piece:
+                    # Highlight selected piece
+                    color = self.selected_color  
+                
+                # Check if this is a valid move square
+                elif self.valid_moves and (row, col) in self.valid_moves:
+                    #  Highlight valid moves
+                    color = self.highlight_color
+                
+                if piece == 0:
+                    self.buttons[row][col].config(text="", bg=color, state=tk.NORMAL)
+                else:
+                    # Red for 'r', Black for 'b'
+                    piece_color = "red" if piece.color == "r" else "black"  
+                    piece_text = str(piece)
+                    self.buttons[row][col].config(
+                        text=piece_text, 
+                        fg=piece_color, 
+                        bg=color,
+                        font=("Arial", 12, "bold"),
+                        state=tk.NORMAL if piece.color == self.game.turn else tk.DISABLED
+                    )
+                            
+        self.update_status()
+        # Force an update to ensure UI reflects changes#############################self.root.update_idletasks()
+        self.root.update()
+        print("Board updated.")
+
+    def clear_highlights(self):
+        # Clear highlights on the board and reset to original colors
+        self.valid_moves = {}  # Clear stored valid moves
+        for row in range(8):
+            for col in range(8):
+                # # Light and dark squares
+                # color = self.light_square if (row + col) % 2 == 0 else self.dark_square
+                # self.buttons[row][col].config(bg=color)
+                color = self.light_square if (row + col) % 2 == 0 else self.dark_square
+                self.buttons[row][col].config(
+                    bg=color,
+                    highlightbackground=color,  # Reset highlight background
+                    highlightthickness=0,  # Reset highlight thickness
+                )
+        # Force update to ensure highlights are cleared
+        self.root.update()########################################
+
+    def highlight_moves(self, row, col):
+        '''This highlights the valid moves for the selected piece'''
+        piece = self.game.board.board[row][col]
+        if not piece or piece == 0:
+            return
+
+                
+
 
