@@ -184,5 +184,4 @@ class Game:
             return "Red"
         
         return None
-
-
+        
