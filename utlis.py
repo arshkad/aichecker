@@ -202,5 +202,434 @@ def weighted_choice(choices):
         if upto + w >= r:
             return c, w
         upto += w
+ef rounder(numbers, d=4):
+    """Round a single number, or sequence of numbers, to d decimal places."""
+    if isinstance(numbers, (int, float)):
+        return round(numbers, d)
+    else:
+        constructor = type(numbers)  # Can be list, set, tuple, etc.
+        return constructor(rounder(n, d) for n in numbers)
+
+
+def num_or_str(x):  # TODO: rename as `atom`
+    """The argument is a string; convert to a number if possible, or strip it."""
+    try:
+        return int(x)
+    except ValueError:
+        try:
+            return float(x)
+        except ValueError:
+            return str(x).strip()
+
+
+def euclidean_distance(x, y):
+    return np.sqrt(sum((_x - _y) ** 2 for _x, _y in zip(x, y)))
+
+
+def manhattan_distance(x, y):
+    return sum(abs(_x - _y) for _x, _y in zip(x, y))
+
+
+def hamming_distance(x, y):
+    return sum(_x != _y for _x, _y in zip(x, y))
+
+
+def cross_entropy_loss(x, y):
+    return (-1.0 / len(x)) * sum(_x * np.log(_y) + (1 - _x) * np.log(1 - _y) for _x, _y in zip(x, y))
+
+
+def mean_squared_error_loss(x, y):
+    return (1.0 / len(x)) * sum((_x - _y) ** 2 for _x, _y in zip(x, y))
+
+def rms_error(x, y):
+    return np.sqrt(ms_error(x, y))
+
+
+def ms_error(x, y):
+    return mean((_x - _y) ** 2 for _x, _y in zip(x, y))
+
+
+def mean_error(x, y):
+    return mean(abs(_x - _y) for _x, _y in zip(x, y))
+
+
+def mean_boolean_error(x, y):
+    return mean(_x != _y for _x, _y in zip(x, y))
+
+def normalize(dist):
+    """Multiply each number by a constant such that the sum is 1.0"""
+    if isinstance(dist, dict):
+        total = sum(dist.values())
+        for key in dist:
+            dist[key] = dist[key] / total
+            assert 0 <= dist[key] <= 1  # probabilities must be between 0 and 1
+        return dist
+    total = sum(dist)
+    return [(n / total) for n in dist]
+
+
+def random_weights(min_value, max_value, num_weights):
+    return [random.uniform(min_value, max_value) for _ in range(num_weights)]
+
+
+def sigmoid(x):
+    """Return activation value of x with sigmoid function."""
+    return 1 / (1 + np.exp(-x))
+
+
+def sigmoid_derivative(value):
+    return value * (1 - value)
+
+
+def elu(x, alpha=0.01):
+    return x if x > 0 else alpha * (np.exp(x) - 1)
+
+
+def elu_derivative(value, alpha=0.01):
+    return 1 if value > 0 else alpha * np.exp(value)
+
+
+def tanh(x):
+    return np.tanh(x)
+
+
+def tanh_derivative(value):
+    return 1 - (value ** 2)
+def leaky_relu(x, alpha=0.01):
+    return x if x > 0 else alpha * x
+
+
+def leaky_relu_derivative(value, alpha=0.01):
+    return 1 if value > 0 else alpha
+
+
+def relu(x):
+    return max(0, x)
+
+
+def relu_derivative(value):
+    return 1 if value > 0 else 0
+
+
+def step(x):
+    """Return activation value of x with sign function"""
+    return 1 if x >= 0 else 0
+
+
+def gaussian(mean, st_dev, x):
+    """Given the mean and standard deviation of a distribution, it returns the probability of x."""
+    return 1 / (np.sqrt(2 * np.pi) * st_dev) * np.e ** (-0.5 * (float(x - mean) / st_dev) ** 2)
+
+
+def linear_kernel(x, y=None):
+    if y is None:
+        y = x
+    return np.dot(x, y.T)
+def polynomial_kernel(x, y=None, degree=2.0):
+    if y is None:
+        y = x
+    return (1.0 + np.dot(x, y.T)) ** degree
+
+
+def rbf_kernel(x, y=None, gamma=None):
+    """Radial-basis function kernel (aka squared-exponential kernel)."""
+    if y is None:
+        y = x
+    if gamma is None:
+        gamma = 1.0 / x.shape[1]  # 1.0 / n_features
+    return np.exp(-gamma * (-2.0 * np.dot(x, y.T) +
+                            np.sum(x * x, axis=1).reshape((-1, 1)) + np.sum(y * y, axis=1).reshape((1, -1))))
+
+
+# ______________________________________________________________________________
+# Grid Functions
+
+
+orientations = EAST, NORTH, WEST, SOUTH = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+turns = LEFT, RIGHT = (+1, -1)
+
+
+def turn_heading(heading, inc, headings=orientations):
+    return headings[(headings.index(heading) + inc) % len(headings)]
+
+
+def turn_right(heading):
+    return turn_heading(heading, RIGHT)
+
+
+def turn_left(heading):
+    return turn_heading(heading, LEFT)
+
+def distance(a, b):
+    """The distance between two (x, y) points."""
+    xA, yA = a
+    xB, yB = b
+    return np.hypot((xA - xB), (yA - yB))
+
+
+def distance_squared(a, b):
+    """The square of the distance between two (x, y) points."""
+    xA, yA = a
+    xB, yB = b
+    return (xA - xB) ** 2 + (yA - yB) ** 2
+
+
+# ______________________________________________________________________________
+# Misc Functions
+
+class injection:
+    """Dependency injection of temporary values for global functions/classes/etc.
+    E.g., `with injection(DataBase=MockDataBase): ...`"""
+
+    def __init__(self, **kwds):
+        self.new = kwds
+
+    def __enter__(self):
+        self.old = {v: globals()[v] for v in self.new}
+        globals().update(self.new)
+
+    def __exit__(self, type, value, traceback):
+        globals().update(self.old)
+
+
+def memoize(fn, slot=None, maxsize=32):
+    """Memoize fn: make it remember the computed value for any argument list.
+    If slot is specified, store result in that slot of first argument.
+    If slot is false, use lru_cache for caching the values."""
+    if slot:
+        def memoized_fn(obj, *args):
+            if hasattr(obj, slot):
+                return getattr(obj, slot)
+            else:
+                val = fn(obj, *args)
+                setattr(obj, slot, val)
+                return val
+    else:
+        @functools.lru_cache(maxsize=maxsize)
+        def memoized_fn(*args):
+            return fn(*args)
+
+    return memoized_fn
+
+
+def name(obj):
+    """Try to find some reasonable name for the object."""
+    return (getattr(obj, 'name', 0) or getattr(obj, '__name__', 0) or
+            getattr(getattr(obj, '__class__', 0), '__name__', 0) or
+            str(obj))
+
+
+def isnumber(x):
+    """Is x a number?"""
+    return hasattr(x, '__int__')
+
+
+def issequence(x):
+    """Is x a sequence?"""
+    return isinstance(x, collections.abc.Sequence)
+
+
+def print_table(table, header=None, sep='   ', numfmt='{}'):
+    """Print a list of lists as a table, so that columns line up nicely.
+    header, if specified, will be printed as the first row.
+    numfmt is the format for all numbers; you might want e.g. '{:.2f}'.
+    (If you want different formats in different columns,
+    don't use print_table.) sep is the separator between columns."""
+    justs = ['rjust' if isnumber(x) else 'ljust' for x in table[0]]
+    if header:
+        table.insert(0, header)
+
+    table = [[numfmt.format(x) if isnumber(x) else x for x in row]
+             for row in table]
+
+    sizes = list(map(lambda seq: max(map(len, seq)), list(zip(*[map(str, row) for row in table]))))
+
+    for row in table:
+        print(sep.join(getattr(str(x), j)(size) for (j, size, x) in zip(justs, sizes, row)))
+
+
+def open_data(name, mode='r'):
+    aima_root = os.path.dirname(__file__)
+    aima_file = os.path.join(aima_root, *['aima-data', name])
+
+    return open(aima_file, mode=mode)
+
+
+def failure_test(algorithm, tests):
+    """Grades the given algorithm based on how many tests it passes.
+    Most algorithms have arbitrary output on correct execution, which is difficult
+    to check for correctness. On the other hand, a lot of algorithms output something
+    particular on fail (for example, False, or None).
+    tests is a list with each element in the form: (values, failure_output)."""
+    return mean(int(algorithm(x) != y) for x, y in tests)
+
+
+# ______________________________________________________________________________
+# Expressions
+
+# See https://docs.python.org/3/reference/expressions.html#operator-precedence
+# See https://docs.python.org/3/reference/datamodel.html#special-method-names
+
+class Expr:
+    """A mathematical expression with an operator and 0 or more arguments.
+    op is a str like '+' or 'sin'; args are Expressions.
+    Expr('x') or Symbol('x') creates a symbol (a nullary Expr).
+    Expr('-', x) creates a unary; Expr('+', x, 1) creates a binary."""
+
+    def __init__(self, op, *args):
+        self.op = str(op)
+        self.args = args
+
+    # Operator overloads
+    def __neg__(self):
+        return Expr('-', self)
+
+    def __pos__(self):
+        return Expr('+', self)
+
+    def __invert__(self):
+        return Expr('~', self)
+
+    def __add__(self, rhs):
+        return Expr('+', self, rhs)
+
+    def __sub__(self, rhs):
+        return Expr('-', self, rhs)
+
+    def __mul__(self, rhs):
+        return Expr('*', self, rhs)
+
+    def __pow__(self, rhs):
+        return Expr('**', self, rhs)
+
+    def __mod__(self, rhs):
+        return Expr('%', self, rhs)
+
+    def __and__(self, rhs):
+        return Expr('&', self, rhs)
+
+    def __xor__(self, rhs):
+        return Expr('^', self, rhs)
+
+    def __rshift__(self, rhs):
+        return Expr('>>', self, rhs)
+
+    def __lshift__(self, rhs):
+        return Expr('<<', self, rhs)
+
+    def __truediv__(self, rhs):
+        return Expr('/', self, rhs)
+
+    def __floordiv__(self, rhs):
+        return Expr('//', self, rhs)
+
+    def __matmul__(self, rhs):
+        return Expr('@', self, rhs)
+
+    def __or__(self, rhs):
+        """Allow both P | Q, and P |'==>'| Q."""
+        if isinstance(rhs, Expression):
+            return Expr('|', self, rhs)
+        else:
+            return PartialExpr(rhs, self)
+
+    # Reverse operator overloads
+    def __radd__(self, lhs):
+        return Expr('+', lhs, self)
+
+    def __rsub__(self, lhs):
+        return Expr('-', lhs, self)
+
+    def __rmul__(self, lhs):
+        return Expr('*', lhs, self)
+
+    def __rdiv__(self, lhs):
+        return Expr('/', lhs, self)
+
+    def __rpow__(self, lhs):
+        return Expr('**', lhs, self)
+
+    def __rmod__(self, lhs):
+        return Expr('%', lhs, self)
+
+    def __rand__(self, lhs):
+        return Expr('&', lhs, self)
+    
+    def __rxor__(self, lhs):
+        return Expr('^', lhs, self)
+
+    def __ror__(self, lhs):
+        return Expr('|', lhs, self)
+
+    def __rrshift__(self, lhs):
+        return Expr('>>', lhs, self)
+
+    def __rlshift__(self, lhs):
+        return Expr('<<', lhs, self)
+
+    def __rtruediv__(self, lhs):
+        return Expr('/', lhs, self)
+
+    def __rfloordiv__(self, lhs):
+        return Expr('//', lhs, self)
+
+    def __rmatmul__(self, lhs):
+        return Expr('@', lhs, self)
+
+    def __call__(self, *args):
+        """Call: if 'f' is a Symbol, then f(0) == Expr('f', 0)."""
+        if self.args:
+            raise ValueError('Can only do a call for a Symbol, not an Expr')
+        else:
+            return Expr(self.op, *args)
+
+    # Equality and repr
+    def __eq__(self, other):
+        """x == y' evaluates to True or False; does not build an Expr."""
+        return isinstance(other, Expr) and self.op == other.op and self.args == other.args
+    def __lt__(self, other):
+        return isinstance(other, Expr) and str(self) < str(other)
+
+    def __hash__(self):
+        return hash(self.op) ^ hash(self.args)
+
+    def __repr__(self):
+        op = self.op
+        args = [str(arg) for arg in self.args]
+        if op.isidentifier():  # f(x) or f(x, y)
+            return '{}({})'.format(op, ', '.join(args)) if args else op
+        elif len(args) == 1:  # -x or -(x + 1)
+            return op + args[0]
+        else:  # (x - y)
+            opp = (' ' + op + ' ')
+            return '(' + opp.join(args) + ')'
+
+
+# An 'Expression' is either an Expr or a Number.
+# Symbol is not an explicit type; it is any Expr with 0 args.
+
+
+Number = (int, float, complex)
+Expression = (Expr, Number)
+
+
+def Symbol(name):
+    """A Symbol is just an Expr with no args."""
+    return Expr(name)
+
+
+def symbols(names):
+    """Return a tuple of Symbols; names is a comma/whitespace delimited str."""
+    return tuple(Symbol(name) for name in names.replace(',', ' ').split())
+
+
+
+
+
+
+
+
+
+
 
 
