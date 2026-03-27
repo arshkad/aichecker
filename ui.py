@@ -136,6 +136,166 @@ class CheckersUI:
         piece = self.game.board.board[row][col]
         if not piece or piece == 0:
             return
+                       
+        valid_moves = self.game.get_valid_moves(piece)
+        self.valid_moves = valid_moves  # Store valid moves
+        
+        # Debug info
+        print(f"Highlighting moves for piece at ({row},{col})")
+        print(f"Valid moves: {valid_moves}")
+        
+        # Highlight the selected piece
+        self.buttons[row][col].config(bg=self.selected_color)
+        
+        # Highlight valid moves with a very visible color
+        for move_pos in valid_moves:
+            r, c = move_pos
+            print(f"Highlighting move at ({r},{c})")
+            self.buttons[r][c].config(
+                # bg=self.highlight_color,
+                # relief=tk.RAISED,  # Make button appear raised
+                # borderwidth=3  # Make border more visible######################################
+                highlightbackground=self.highlight_color,  # Highlight background
+                highlightthickness=3,  # Make highlight more visible
+            )
+        
+        # Force update to ensure highlights are visible########################
+        self.root.update()
+
+    def ai_move(self):
+        """Handles the AI's move"""
+        # Ask the AI for its best move
+        move = self.ai.choose_move(self.game)
+        print(f"AI chose move: {move}")
+        
+        if move is None:
+            messagebox.showinfo("Game Over", "AI has no valid moves. Player wins!")
+            self.root.quit()
+            return
+
+        # Unpack the move
+        orig_piece, (to_row, to_col), captured = move
+        from_row, from_col = orig_piece.row, orig_piece.col
+        real_piece = self.game.board.board[from_row][from_col]
+
+        print(f"AI moving from ({from_row},{from_col}) to ({to_row},{to_col})")
+
+        # Validate the AI's move
+        if not isinstance(real_piece, self.game.board.board[from_row][from_col].__class__):
+            print("AI attempted to move an invalid piece.")
+            messagebox.showinfo("Error", "AI made an invalid move. Ending game.")
+            self.root.quit()
+            return
+
+        # Highlight AI's move temporarily
+        self.buttons[from_row][from_col].config(bg=self.selected_color)
+        self.buttons[to_row][to_col].config(bg=self.highlight_color)
+        self.root.update()
+        self.root.after(500)  # Pause to show the move
+
+        # Perform the move
+        #################self.game.move(real_piece, to_row, to_col)
+
+        old_mand = self.game.mandatory_jumps
+        self.game.mandatory_jumps = False
+        self.game.move(real_piece, to_row, to_col)
+        self.game.mandatory_jumps = old_mand
+        # Check if the AI's move resulted in a mandatory jump
+        self.game.switch_turn()
+
+        # Update the board display
+        self.clear_highlights()
+        self.update_board()
+
+        # Check for end of game
+        if self.game.is_game_over():
+            winner = self.game.get_winner()
+            messagebox.showinfo("Game Over", f"{winner} wins!" if winner else "It's a draw!")
+            self.root.quit()
+
+    def on_square_click(self, row, col):
+        '''This handles the square click event'''
+        # If it's AI's turn, ignore clicks
+        if self.game_mode == "ai" and self.game.turn == "b":
+            print("It's AI's turn. Player interaction is disabled.")
+            return
+
+        piece = self.game.board.board[row][col]
+        
+        # Debug info
+        print(f"Clicked on square ({row},{col})")
+        if piece != 0:
+            print(f"Piece: {piece}, Color: {piece.color}, Turn: {self.game.turn}")
+        
+        # If first click or clicking on own piece - select piece
+        if self.selected_piece is None:
+            if piece != 0 and piece.color == self.game.turn:
+                self.selected_piece = (row, col)
+                self.clear_highlights()
+                self.highlight_moves(row, col)
+                print(f"Selected piece at ({row},{col})")
+            else:
+                print("No valid piece selected")
+        else:
+            # Second click - try to move
+            from_row, from_col = self.selected_piece
+                        to_row, to_col = row, col
+            moving_piece = self.game.board.board[from_row][from_col]
+            
+            # Check if this is a valid destination
+            if (to_row, to_col) in self.valid_moves:
+                print(f"Valid move from ({from_row},{from_col}) to ({to_row},{to_col})")
+                
+                # Highlight the move before executing
+                self.buttons[from_row][from_col].config(bg=self.selected_color)
+                self.buttons[to_row][to_col].config(bg=self.highlight_color)
+                self.root.update()
+                self.root.after(200)  # Short pause to show move
+                
+                # Execute the move
+                self.game.move(moving_piece, to_row, to_col)
+                self.game.switch_turn()
+                self.selected_piece = None
+                self.valid_moves = {}  # Clear stored valid moves
+                
+                # Update display
+                self.clear_highlights()
+                self.update_board()
+                
+                # Check for game over
+                if self.game.is_game_over():
+                    winner = self.game.get_winner()
+                    messagebox.showinfo("Game Over", f"{winner} wins!" if winner else "It's a draw!")
+                    self.root.quit()
+                elif self.game_mode == "ai" and self.game.turn == "b":
+                    # Schedule AI move after a delay
+                    self.root.after(500, self.ai_move)
+            else:
+                # Not a valid move - deselect or select new piece
+                print("Not a valid move")
+                if piece != 0 and piece.color == self.game.turn:
+                    # If clicking on another of player's pieces, select that one instead
+                    self.selected_piece = (row, col)
+                                        self.clear_highlights()
+                    self.highlight_moves(row, col)
+                    print(f"Selected new piece at ({row},{col})")
+                else:
+                    # Otherwise just deselect
+                    self.selected_piece = None
+                    self.valid_moves = {}  # Clear stored valid moves
+                    self.clear_highlights()
+                    self.update_board()
+                    print("Deselected piece")
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = CheckersUI(root)
+    root.mainloop()
+
+
+
+
 
                 
 
